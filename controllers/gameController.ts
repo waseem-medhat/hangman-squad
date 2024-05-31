@@ -15,13 +15,11 @@ export async function createGame(req: Request, res: Response) {
     }
 
     const newGame = await gameModel.create({ gameId: id, word: "Hello" })
-    console.log(newGame);
-
     res.status(201).json({
         game: {
             gameId: newGame.gameId,
             guesses: newGame.guesses,
-            newGame: newGame.wrongGuesses
+            wrongGuesses: newGame.wrongGuesses
         }
     })
 }
@@ -33,7 +31,6 @@ export async function listAllGames(_req: Request, res: Response) {
 
 export async function getGame(req: Request, res: Response) {
     const game = await gameModel.findOne({ gameId: req.params.id })
-
     if (!game) {
         res.status(404).json({ error: "not found" })
         return
@@ -42,8 +39,43 @@ export async function getGame(req: Request, res: Response) {
     res.json({ game })
 }
 
-export function updateGame(_req: Request, res: Response) {
-    res.json({ message: "Update game (player only)" })
+export async function updateGame(req: Request, res: Response) {
+    const game = await gameModel.findOne({ gameId: req.params.id })
+    if (!game) {
+        res.status(400).json({ error: "trying to update a nonexistent game" })
+        return
+    }
+
+    const guess: string = req.body.guess
+    if (!guess) {
+        res.status(400).json({ error: "specify the guessed letter" })
+        return
+    }
+
+    const letterRegex = /[a-z]/i
+    if (guess.length !== 1 || !letterRegex.test(guess)) {
+        res.status(400).json({ error: "guess must be a single letter" })
+        return
+    }
+
+    const updatedGame = await gameModel.findOneAndUpdate(
+        { gameId: req.params.id },
+        { guesses: [...game.guesses, guess] },
+        { new: true }
+    )
+
+    if (!updatedGame) {
+        res.status(500).json({ error: "couldn't update" })
+        return
+    }
+
+    res.json({
+        game: {
+            gameId: updatedGame.gameId,
+            guesses: updatedGame.guesses,
+            wrongGuesses: updatedGame.wrongGuesses
+        }
+    })
 }
 
 export async function deleteGame(req: Request, res: Response) {
@@ -53,11 +85,6 @@ export async function deleteGame(req: Request, res: Response) {
         return
     }
 
-    const deletion = await gameModel.deleteOne({ gameId: id })
-    if (deletion.acknowledged && deletion.deletedCount > 0) {
-        res.status(204)
-        return
-    }
-
-    res.status(500).json({ error: "unknown error" })
+    await gameModel.deleteOne({ gameId: id })
+    res.status(204)
 }
