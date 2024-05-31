@@ -1,0 +1,20 @@
+{
+  "name": "hangman-squad",
+  "version": "1.0.0",
+  "description": "Multiplayer Hangman game",
+  "main": "backend/server.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.12.13",
+    "typescript": "^5.4.5"
+  }
+}
