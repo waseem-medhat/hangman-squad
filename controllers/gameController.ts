@@ -1,8 +1,29 @@
 import { Request, Response } from "express";
 import gameModel from "../models/gameModel"
 
-export function createGame(_req: Request, res: Response) {
-    res.json({ message: "Create game" })
+export async function createGame(req: Request, res: Response) {
+    const { id } = req.body
+    if (!id) {
+        res.status(400).json({error: "specify an id"})
+        return
+    }
+
+    const dbGame = await gameModel.findOne({ gameId: id })
+    if (dbGame) {
+        res.status(400).json({error: "a game with same id already exists"})
+        return
+    }
+
+    const newGame = await gameModel.create({ gameId: id, word: "Hello" })
+    console.log(newGame);
+
+    res.status(201).json({
+        game: {
+            gameId: newGame.gameId,
+            guesses: newGame.guesses,
+            newGame: newGame.wrongGuesses
+        }
+    })
 }
 
 export async function listAllGames(_req: Request, res: Response) {
