@@ -3,6 +3,7 @@ import dotenv from "dotenv"
 
 import connectDB from "./config/db"
 import gameRouter from "./routes/gameRouter"
+import userRouter from "./routes/userRouter"
 
 dotenv.config()
 connectDB()
@@ -14,5 +15,6 @@ app.use(express.json())
 
 app.get("/api", (_req, res) => res.json({ message: "Welcome to Hangman Squad API!" }))
 app.use("/api/games", gameRouter)
+app.use("/api/users", userRouter)
 
 app.listen(port, () => console.log(`Hangman Squad server listening to :${port}`))
