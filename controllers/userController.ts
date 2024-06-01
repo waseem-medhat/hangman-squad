@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import { compareSync, genSalt, hash } from "bcryptjs"
 import userModel from "../models/userModel"
-import { sign } from "jsonwebtoken";
+import { JwtPayload, sign, verify } from "jsonwebtoken";
+
 
 export async function createUser(req: Request, res: Response) {
     const { username, nickname, password } = req.body
@@ -10,8 +11,8 @@ export async function createUser(req: Request, res: Response) {
         return
     }
 
-    const user = await userModel.findOne({ username })
-    if (user) {
+    const existingUser = await userModel.findOne({ username })
+    if (existingUser) {
         res.status(400).json({ error: "username already exists" })
         return
     }
@@ -36,7 +37,6 @@ export async function loginUser(req: Request, res: Response) {
     }
 
     const user = await userModel.findOne({ username })
-
     if (!user) {
         res.status(400).json({ error: "invalid credentials" })
         return
@@ -49,18 +49,41 @@ export async function loginUser(req: Request, res: Response) {
 
     const jwtSecret = process.env.JWT_SECRET || ""
     const token = sign({ username }, jwtSecret, { expiresIn: '1d', })
-
     res.status(200).json({ token })
 }
 
 export async function getUser(req: Request, res: Response) {
-    const user = await userModel.findOne({ username: req.params.username })
+    const authRegex = /Bearer .+/
+
+    const authHeader = req.header("authorization")
+    if (!authHeader || !authRegex.test(authHeader)) {
+        res.status(401).json({ error: "invalid or no authorization header" })
+        return
+    }
+
+    const token = authHeader.split(' ')[1]
+
+    let decoded: JwtPayload
+    try {
+        const jwtSecret = process.env.JWT_SECRET || ""
+        decoded = verify(token, jwtSecret) as JwtPayload
+    } catch (error) {
+        res.status(401).json({ error: "bad token" })
+        return
+    }
+
+    if (decoded.username !== req.params.username) {
+        res.status(401).json({ error: "unauthorized" })
+        return
+    }
+
+    const user = await userModel.findOne({ username: decoded.username })
     if (!user) {
         res.status(404).json({ error: "not found" })
         return
     }
 
-    res.json({ user })
+    res.json({ username: user.username, nickname: user.nickname })
 }
 
 export async function listAllUsers(_req: Request, res: Response) {
