@@ -11,7 +11,7 @@ router
 router.post("/login", loginUser)
 
 router
-    .route("/:id")
+    .route("/:username")
     .get(getUser)
     .put(updateUser)
     .delete(deleteUser)

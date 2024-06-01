@@ -69,21 +69,33 @@ export async function listAllUsers(_req: Request, res: Response) {
 }
 
 export async function updateUser(req: Request, res: Response) {
-    const user = await userModel.findOne({ username: req.params.id })
+    const user = await userModel.findOne({ username: req.params.username })
     if (!user) {
         res.status(400).json({ error: "trying to update a nonexistent user" })
         return
     }
-    res.json({ message: "update user (unimplemented)" })
+
+    const { nickname, password } = req.body
+    const newUser = await userModel.findOneAndUpdate({
+        username: user.username,
+        nickname: nickname ? nickname : user.nickname,
+        password: password ? password : user.password
+    })
+
+    if (!newUser) {
+        res.status(500).json({ error: "an error occurred" })
+    }
+
+    res.status(200).send()
 }
 
 export async function deleteUser(req: Request, res: Response) {
-    const { id: username } = req.params
+    const username = req.params.username
     if (!username) {
         res.status(400).json({ error: "specify an id" })
         return
     }
 
-    await userModel.deleteOne({ username: username })
-    res.status(204)
+    await userModel.deleteOne({ username })
+    res.status(204).send()
 }
