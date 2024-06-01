@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import {genSalt, hash} from "bcryptjs"
 import userModel from "../models/userModel"
 
 export async function createUser(req: Request, res: Response) {
@@ -14,12 +15,14 @@ export async function createUser(req: Request, res: Response) {
         return
     }
 
-    const newUser = await userModel.create({ username, nickname, password })
+    const salt = await genSalt(10)
+    const pwHash = await hash(password, salt)
+
+    const newUser = await userModel.create({ username, nickname, password: pwHash })
     res.status(201).json({
         user: {
             username: newUser.username,
-            nickname: newUser.nickname,
-            password: newUser.password
+            nickname: newUser.nickname
         }
     })
 }
