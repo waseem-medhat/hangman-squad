@@ -72,27 +72,53 @@ export async function listAllUsers(_req: Request, res: Response) {
 }
 
 export async function updateUser(req: Request, res: Response) {
+    if (req.user.username !== req.params.username) {
+        res.status(401).json({ error: "unauthorized" })
+        return
+    }
+
     const user = await userModel.findOne({ username: req.params.username })
     if (!user) {
         res.status(400).json({ error: "trying to update a nonexistent user" })
         return
     }
 
-    const { nickname, password } = req.body
-    const newUser = await userModel.findOneAndUpdate({
-        username: user.username,
-        nickname: nickname ? nickname : user.nickname,
-        password: password ? password : user.password
-    })
+    let pwNew = user.password
+    if (req.body.password) {
+        const salt = await genSalt(10)
+        pwNew = await hash(req.body.password, salt)
+    }
+
+    let nicknameNew = user.nickname
+    if (req.body.nickname) {
+        nicknameNew = req.body.nickname
+    }
+
+    const newUser = await userModel.findOneAndUpdate(
+        { username: user.username },
+        { nickname: nicknameNew, password: pwNew },
+        { new: true }
+    )
 
     if (!newUser) {
         res.status(500).json({ error: "an error occurred" })
+        return
     }
 
-    res.status(200).send()
+    res.status(200).json({
+        user: {
+            usrname: newUser.username,
+            nickname: newUser.nickname
+        }
+    })
 }
 
 export async function deleteUser(req: Request, res: Response) {
+    if (req.user.username !== req.params.username) {
+        res.status(401).json({ error: "unauthorized" })
+        return
+    }
+
     const username = req.params.username
     if (!username) {
         res.status(400).json({ error: "specify an id" })
